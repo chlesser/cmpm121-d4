@@ -7,6 +7,7 @@ const MAX_QUEUED_TURNS := 2
 var size: Vector2i
 var body: Array[Vector2i] = []  # head first
 var heading := Vector2i.RIGHT
+var _pending_growth := 0  # cells the tail holds back over the next ticks
 var _turns: Array[Vector2i] = []  # turns wait here until the next tick (Command)
 
 
@@ -27,6 +28,12 @@ func turn(direction: Vector2i) -> void:
 	_turns.append(direction)
 
 
+## Grow by the given number of cells, one per tick: a tick with growth pending
+## keeps its tail instead of removing it.
+func grow(cells: int) -> void:
+	_pending_growth += cells
+
+
 ## Advance one cell, taking the next queued turn first. Wrapping around the grid is a
 ## placeholder: once Session ends the run at solid tiles, the dragon never reaches an edge.
 func tick() -> void:
@@ -34,4 +41,7 @@ func tick() -> void:
 		heading = _turns.pop_front()
 	var head := body[0] + heading
 	body.push_front(Vector2i(posmod(head.x, size.x), posmod(head.y, size.y)))
-	body.pop_back()
+	if _pending_growth > 0:
+		_pending_growth -= 1
+	else:
+		body.pop_back()

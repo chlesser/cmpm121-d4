@@ -28,6 +28,7 @@ already here from the starter; keep them accurate as you change things.
 | session | one run at the game, from the first tick until it ends; owns the board and the dragon | `Session` in `core/session.gd` |
 | tick | one step of the rules; the dragon moves one cell | `Session.tick()`, `Dragon.tick()` |
 | tile kind | what a cell is made of, such as `floor` or `wall` | `Board.TILES`, `TILES` in `tools/build_art.py` |
+| food | the one thing the dragon eats: sitting on a free cell, eaten when the head enters it, then it respawns on another free cell and the body grows | `Session.food`, `_place_food()` in `core/session.gd`, `FOOD` in `tools/build_art.py` |
 | piece | one model in the kit: head, straight, turn, tail | `Kit.Piece`, `PIECES` in `tools/build_art.py` |
 | _word_ | _meaning_ | _where_ |
 

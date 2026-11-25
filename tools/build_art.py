@@ -9,8 +9,9 @@ deno task art:lts  uses Blender 4.5 LTS, for Intel Macs, which Blender 5 dropped
 deno task blender  opens art/dragon_kit.blend in the Blender app, to look around
 
 Every piece fills one 1x1 grid cell and is made by a builder function listed in
-PIECES (the dragon) or TILES (the ground). The starter's builders all use voxels(),
-but a builder can make any geometry: swap one out and the game picks it up by name.
+PIECES (the dragon), TILES (the ground), or FOOD (what the dragon eats). The
+starter's builders all use voxels(), but a builder can make any geometry: swap one
+out and the game picks it up by name.
 
 Conventions the game relies on (Blender coordinates, Z up):
   - A cell spans x and y from -0.5 to 0.5. +Y is the direction of travel.
@@ -192,6 +193,22 @@ def build_wall(bm):
         """] * 3)
 
 
+def build_food(bm):
+    """A morsel the dragon eats: a gold patty with a glowing ember on top.
+    Drawn by app/main.gd at Session.food, not scattered by Stage like tiles."""
+    voxels(bm, ["""
+        ....
+        .**.
+        .**.
+        ....
+        """, """
+        ....
+        .o..
+        ....
+        ....
+        """])
+
+
 PIECES = {  # the dragon kit; the game finds each mesh by these names
     "head": build_head,
     "straight": build_straight,
@@ -201,6 +218,9 @@ PIECES = {  # the dragon kit; the game finds each mesh by these names
 TILES = {  # one entry per kind in core/board.gd's TILES; a new kind is one builder and one line
     "floor": build_floor,
     "wall": build_wall,
+}
+FOOD = {  # what the dragon eats, placed by Session on a free cell
+    "food": build_food,
 }
 
 
@@ -237,7 +257,7 @@ def lay_out_kit(scene):
     """One row per registry, so a GLB viewer shows a tidy catalog instead of every piece
     stacked on the origin. Each mesh is still modeled around its own cell's center."""
     spacing = 1.5
-    for row, registry in enumerate([PIECES, TILES]):
+    for row, registry in enumerate([PIECES, TILES, FOOD]):
         for column, (name, build) in enumerate(registry.items()):
             make_object(scene, name, build, location=(column * spacing, -row * spacing, 0))
 

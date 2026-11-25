@@ -15,6 +15,8 @@ const DIRECTIONS := {
 var session := Session.new(GRID)
 var meshes := {}  # kit piece name -> Mesh, shared by everything that shows it (Flyweight)
 var segments: Array[MeshInstance3D] = []
+var food_mesh := MeshInstance3D.new()
+var score_label := Label.new()
 var camera := Camera3D.new()
 var _clock := 0.0
 
@@ -22,7 +24,13 @@ var _clock := 0.0
 func _ready() -> void:
 	meshes = Stage.load_kit()
 	_build_stage()
+	food_mesh.mesh = meshes["food"]
+	score_label.position = Vector2(16, 16)
+	add_child(food_mesh)
+	add_child(score_label)
 	_draw_dragon()
+	_draw_food()
+	_draw_score()
 
 
 ## Input arrives as events, so even a tap shorter than one frame is never missed.
@@ -38,6 +46,8 @@ func _process(delta: float) -> void:
 		_clock -= TICK_SECONDS
 		session.tick()
 		_draw_dragon()
+		_draw_food()
+		_draw_score()
 	_follow(delta)
 
 
@@ -71,6 +81,15 @@ func _draw_dragon() -> void:
 		segment.mesh = meshes[Kit.Piece.keys()[placed[i][0]].to_lower()]
 		segment.position = _center(cell)
 		segment.rotation.y = placed[i][1] * PI / 2
+
+
+func _draw_food() -> void:
+	food_mesh.position = _center(session.food)
+
+
+## The score lives in the Session; this only shows it.
+func _draw_score() -> void:
+	score_label.text = "Score %d" % session.score
 
 
 func _center(cell: Vector2i) -> Vector3:
