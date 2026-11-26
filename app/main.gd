@@ -17,6 +17,7 @@ var meshes := {}  # kit piece name -> Mesh, shared by everything that shows it (
 var segments: Array[MeshInstance3D] = []
 var food_mesh := MeshInstance3D.new()
 var score_label := Label.new()
+var big_score_label := Label.new()
 var camera := Camera3D.new()
 var _clock := 0.0
 
@@ -26,18 +27,38 @@ func _ready() -> void:
 	_build_stage()
 	food_mesh.mesh = meshes["food"]
 	score_label.position = Vector2(16, 16)
+	big_score_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	big_score_label.add_theme_font_size_override("font_size", 32)
+	big_score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	big_score_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	add_child(big_score_label)
+	big_score_label.visible = false
 	add_child(food_mesh)
 	add_child(score_label)
 	_draw_dragon()
 	_draw_food()
 	_draw_score()
+	session.state_changed.connect(state_changed)
 
 
 ## Input arrives as events, so even a tap shorter than one frame is never missed.
 func _unhandled_input(event: InputEvent) -> void:
-	for action in DIRECTIONS:
-		if event.is_action_pressed(action):
-			session.dragon.turn(DIRECTIONS[action])
+	match session.state:
+		Session.State.PLAYING:
+			for action in DIRECTIONS:
+				if event.is_action_pressed(action):
+					session.dragon.turn(DIRECTIONS[action])
+		Session.State.READY:
+			big_score_label.visible = false
+			session.start_game()
+		Session.State.GAMEOVER:
+			new_session()
+			big_score_label.visible = false
+
+
+func show_big_text() -> void:
+	big_score_label.text = "Score %d \n Press any button to restart" % session.score
+	big_score_label.visible = true
 
 
 func _process(delta: float) -> void:
@@ -49,6 +70,16 @@ func _process(delta: float) -> void:
 		_draw_food()
 		_draw_score()
 	_follow(delta)
+
+
+func new_session() -> void:
+	session = Session.new(GRID)
+	session.state_changed.connect(state_changed)
+
+
+func state_changed(new_state: Session.State):
+	if new_state == Session.State.GAMEOVER:
+		show_big_text()
 
 
 ## Sky, light, and tiles live in app/stage.gd; the camera follows the head.

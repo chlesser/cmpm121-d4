@@ -4,10 +4,14 @@
 class_name Session
 extends RefCounted
 
+signal state_changed(new_state: State)
+enum State { READY, PLAYING, GAMEOVER, OVER }
+
 const GROWTH_PER_FOOD := 1  # body cells added per bite
 const RNG_SEED := 121  # fixed, so food placement is the same every run and in tests
 
 var board: Board
+var state := State.READY
 var dragon: Dragon
 var food := Vector2i.ZERO  # the cell the dragon eats when its head enters it
 var score := 0  # how much food has been eaten
@@ -24,12 +28,24 @@ func _init(grid_size: Vector2i, rng_seed: int = RNG_SEED) -> void:
 ## One step of the rules. TODO for D4: collisions with the dragon's own body and
 ## with solid tiles (board.is_solid). Both need the dragon and something else,
 ## which is why they go here rather than in Dragon.tick.
+func start_game() -> void:
+	state_change(State.PLAYING)
+
+
 func tick() -> void:
+	if state != State.PLAYING:
+		return
 	dragon.tick()
 	if dragon.body[0] == food:
 		score += 1
 		dragon.grow(GROWTH_PER_FOOD)
 		_place_food()
+	if board.is_solid(dragon.body[0]):
+		state_change(State.GAMEOVER)
+		return
+	if dragon.body[0] in dragon.body.slice(1):
+		state_change(State.GAMEOVER)
+		return
 
 
 ## Put the food on a free cell: floor that no part of the dragon covers.
@@ -39,3 +55,8 @@ func _place_food() -> void:
 		if not board.is_solid(cell) and cell not in dragon.body:
 			free.append(cell)
 	food = free[_rng.randi_range(0, free.size() - 1)]
+
+
+func state_change(new_state: State) -> void:
+	state = new_state
+	state_changed.emit(state)

@@ -3,18 +3,21 @@ extends "res://tests/test_case.gd"
 
 func test_a_tick_moves_the_dragon_head() -> void:
 	var session := Session.new(Vector2i(10, 10))
+	session.start_game()
 	session.tick()
 	assert_eq(session.dragon.body[0], Vector2i(6, 5))
 
 
 func test_the_dragon_starts_on_open_floor_inside_a_wall() -> void:
 	var session := Session.new(Vector2i(10, 10))
+	session.start_game()
 	assert_true(session.board.is_solid(Vector2i(0, 0)))
 	assert_true(not session.board.is_solid(session.dragon.body[0]))
 
 
 func test_eating_grows_the_body_by_the_chosen_amount() -> void:
 	var session := Session.new(Vector2i(10, 10))
+	session.start_game()
 	var start := session.dragon.body.size()
 	session.food = session.dragon.body[0] + session.dragon.heading  # straight ahead
 	session.tick()  # the head enters the food and eats it
@@ -26,6 +29,7 @@ func test_eating_grows_the_body_by_the_chosen_amount() -> void:
 func test_new_food_never_appears_on_the_body() -> void:
 	for rng_seed in 20:  # each seed respawns the food somewhere different
 		var session := Session.new(Vector2i(10, 10), rng_seed)
+		session.start_game()
 		session.food = session.dragon.body[0] + session.dragon.heading
 		session.tick()  # the head enters the food: it is eaten, and new food is placed
 		assert_true(not session.board.is_solid(session.food))
@@ -34,8 +38,49 @@ func test_new_food_never_appears_on_the_body() -> void:
 
 func test_the_score_counts_what_was_eaten() -> void:
 	var session := Session.new(Vector2i(10, 10))
+	session.start_game()
 	session.food = session.dragon.body[0] + session.dragon.heading
 	session.tick()
 	session.food = session.dragon.body[0] + session.dragon.heading
 	session.tick()
 	assert_eq(session.score, 2)
+
+
+func test_hitting_wall_kills() -> void:
+	var session := Session.new(Vector2i(10, 10))
+	session.start_game()
+	for i in 6:
+		session.tick()
+	assert_eq(session.state, Session.State.GAMEOVER)
+
+
+func test_hitting_self_kills() -> void:
+	var session := Session.new(Vector2i(10, 10))
+	session.start_game()
+	session.food = session.dragon.body[0] + session.dragon.heading
+	session.tick()
+	session.dragon.turn(Vector2i.UP)
+	session.tick()
+	session.dragon.turn(Vector2i.LEFT)
+	session.tick()
+	session.dragon.turn(Vector2i.DOWN)
+	session.tick()
+	assert_eq(session.state, Session.State.GAMEOVER)
+
+
+func test_missing_tail_safe() -> void:
+	var session := Session.new(Vector2i(10, 10))
+	session.start_game()
+	session.tick()
+	session.dragon.turn(Vector2i.UP)
+	session.tick()
+	session.dragon.turn(Vector2i.LEFT)
+	session.tick()
+	session.dragon.turn(Vector2i.DOWN)
+	session.tick()
+	assert_eq(session.state, Session.State.PLAYING)
+
+
+func test_starts_after_input() -> void:
+	var session := Session.new(Vector2i(10, 10))
+	assert_eq(session.state, Session.State.READY)
